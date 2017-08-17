@@ -116,80 +116,103 @@ var NumToBangla = {
         '900': 'নয়শো'
     },
 
-    places_words: {
-        4: 'হাজার',
-        6: 'লাখ',
-        8: 'কোটি'
+    determinant: {
+        '': (numLength) => numLength < 3,
+        'শত': (numLength) => numLength == 3,
+        'হাজার': (numLength) => numLength == 4,
+        'অজুত': (numLength) => numLength == 5,
+        'লাখ': (numLength) => numLength == 6,
+        'নিজুত': (numLength) => numLength == 7,
+        'কোটি': (numLength) => numLength >= 8
     },
 
-    from_places_to_words: function(str_num, start, result) {
-        var num_len = str_num.length;
-        var word = this.places_words[start];
+    convertRec: function (num) {
+        let self = this;
 
-        if (num_len > start) {
-            var tho_places = str_num
-                .slice(-(start + 1))
-                .substring(0, 2);
-            if (parseInt(tho_places) != 0) {
-                result = this.numtow[(tho_places[0] == 0) ?
-                    tho_places[1] :
-                    tho_places] + ' ' + word + ' ' + result;
+        // local functions
+        const isInteger = function (value) {
+            return typeof value === 'number' &&
+                isFinite(value) &&
+                Math.floor(value) === value;
+        }
+
+        const digits = (number) => Math.log(number) * Math.LOG10E + 1 | 0;
+        const isNegative = (number) => number < 0;
+        const split = (number, count) => {
+            // Doing math operations in JS, I must have guts
+            // Replace with string operations if need be. Wanted to do some perf test
+            const digitCount = digits(number);
+            count = Math.min(digitCount, count);
+            const decpower = 10 ** (digitCount - count);
+            let retArr = [Math.floor(number / decpower)]
+
+            if (count !== digitCount) retArr.push(number % decpower);
+            return retArr;
+        };
+
+        const hasDet = (numLength, determinant) => Object
+            .keys(determinant)
+            .find(key => determinant[key](numLength));
+
+        const convertInternal = function (number) {
+            numLength = digits(number);
+            let det = hasDet(numLength, self.determinant);
+
+            let numSplit = [];
+            let midterm = '';
+            let firstTerm = '';
+
+            if (det) {
+                if (det !== 'কোটি') {
+                    switch (det) {
+                        case 'শত':
+                            numSplit = split(number, 1);
+                            numSplit[0] = numSplit[0] * 100;
+                            break;
+                        case 'হাজার':
+                            numSplit = split(number, 1);
+                            midterm = 'হাজার';
+                            break;
+                        case 'অজুত':
+                            numSplit = split(number, 2);
+                            midterm = 'হাজার';
+                            break;
+                        case 'লাখ':
+                            numSplit = split(number, 1);
+                            midterm = 'লাখ';
+                            break;
+                        case 'নিজুত':
+                            numSplit = split(number, 2);
+                            midterm = 'লাখ';
+                            break;
+                    }
+                    firstTerm = self.numtow[numSplit[0].toString()];
+                }
+                else {
+                    numSplit = split(number, numLength - 7);
+                    midterm = 'কোটি';
+                    // recurse again to get the first term with out split
+                    firstTerm = convertInternal(numSplit[0]);
+                }
+
+                return [
+                    firstTerm,
+                    midterm,
+                    numSplit[1] === 0 ? '' : convertInternal(numSplit[1])
+                ].filter(x => x.length > 0).join(" ")
             }
-        } else if (num_len > (start - 1)) {
-            var tho_place = str_num
-                .slice(-start)
-                .substring(0, 1);
-            if (parseInt(tho_place) != 0) {
-                result = this.numtow[tho_place] + ' ' + word + ' ' + result;
+            else {
+                return self.numtow[number.toString()];
             }
         }
 
-        return result;
-    },
+        if (!isInteger(num))
+            throw new Error("Invalid argument num, expected number, encountered " + typeof num);
 
-    convert: function(num) {
-        var result = '';
-        var paisa = '';
-        str_num = num.toString();
-        num_len = str_num.length;
+        if (isNegative(num))
+            throw new Error("Expected positive integer, encountered negative integer");
 
-        // Last digit
-        if (parseInt(str_num) == 0) {
-            // If you truly wanna be a zero, go be a zero and eject
-            result = this.numtow[str_num];
-        } else { // Non-zero
-
-            // Just 1 digit
-            if (num_len == 1) {
-                result = this.numtow[str_num[num_len - 1]];
-            }
-
-            if (num_len > 1) {
-                // Last 2 digits
-                var last_two = str_num.slice(-2);
-
-                // What if 2nd last is zero?
-                if (parseInt(last_two[0]) == 0 && parseInt(last_two[1]) != 0) {
-                    result = this.numtow[last_two[1].toString()];
-                } else {
-                    if (parseInt(last_two) != 0)
-                        result = this.numtow[last_two];
-                }
-
-                // Hundredth place
-                var hundred_places = str_num.slice(-3);
-                if (num_len > 2 && hundred_places[0] != 0) {
-                    result = this.numtow[parseInt(hundred_places) - parseInt(str_num.slice(-2))] + ' ' + result;
-                }
-
-                // Thousands, millions and more
-                for (var i = 4; i < 9; i += 2) {
-                    result = this.from_places_to_words(str_num, i, result);
-                }
-            }
-        } // non-zero
-
-        return result.trim();
+        return convertInternal(num);
     }
 }
 
@@ -218,12 +241,16 @@ var test_data = [
     [987654321, 'আটানব্বই কোটি ছিয়াত্তর লাখ চুয়ান্ন হাজার তিনশো একুশ'],
     [990000000, 'নিরানব্বই কোটি'],
     [990000001, 'নিরানব্বই কোটি এক'],
-    [999999999, 'নিরানব্বই কোটি নিরানব্বই লাখ নিরানব্বই হাজার নয়শো নিরানব্বই']
+    [999999999, 'নিরানব্বই কোটি নিরানব্বই লাখ নিরানব্বই হাজার নয়শো নিরানব্বই'],
+    [9999999999, 'নয়শো নিরানব্বই কোটি নিরানব্বই লাখ নিরানব্বই হাজার নয়শো নিরানব্বই'],
+    [99999999999, 'নয় হাজার নয়শো নিরানব্বই কোটি নিরানব্বই লাখ নিরানব্বই হাজার নয়শো নিরানব্বই'],
+    [999999999999, 'নিরানব্বই হাজার নয়শো নিরানব্বই কোটি নিরানব্বই লাখ নিরানব্বই হাজার নয়শো নিরানব্বই']
 ];
 
-QUnit.test("All tests from 0-99 crore", function (assert) {
+QUnit.test("All tests revisited", function (assert) {
     for (var i = 0; i < test_data.length; ++i) {
-        assert.equal(NumToBangla.convert(test_data[i][0]), test_data[i][1], 
+        assert.equal(NumToBangla.convertRec(test_data[i][0]), test_data[i][1],
             test_data[i][0] + ' => ' + test_data[i][1]);
     }
 });
+
