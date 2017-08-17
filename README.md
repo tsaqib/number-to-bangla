@@ -1,4 +1,4 @@
-Because there was simply no other utility could be found on the internet, but someone needed it. It uses a simple look-ahead sequence processing technique. And it includes QUnit tests.
+Because there was simply no other utility could be found on the internet, but someone needed it. It uses a simple look-ahead sequence processing technique. Currently, it works within 0-999999999 range only. And it includes QUnit tests.
 
 Go ahead and open the HTML file included in this project. You will see test results to be appeared as below:
 
