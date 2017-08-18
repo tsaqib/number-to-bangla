@@ -1,5 +1,6 @@
-// Written by Tanzim Saqib. Web: http://tanzimsaqib.com
+// Written by Tanzim Saqib (http://tanzimsaqib.com)
 // Repo: https://github.com/tsaqib/number-to-bangla
+// Contributor: Swagata Prateek (http://ilovecsharp.com)
 // Description: A simple JavaScript utility to convert from numbers to words in Bangla.
 // Because there was simply no other could be found on the internet, but someone needed it.
 
@@ -116,84 +117,6 @@ var NumToBangla = {
         '900': 'নয়শো'
     },
 
-    /* The original version */
-    places_words: {
-        4: 'হাজার',
-        6: 'লাখ',
-        8: 'কোটি'
-    },
-
-    from_places_to_words: function(str_num, start, result) {
-        var num_len = str_num.length;
-        var word = this.places_words[start];
-
-        if (num_len > start) {
-            var tho_places = str_num
-                .slice(-(start + 1))
-                .substring(0, 2);
-            if (parseInt(tho_places) != 0) {
-                result = this.numtow[(tho_places[0] == 0) ?
-                    tho_places[1] :
-                    tho_places] + ' ' + word + ' ' + result;
-            }
-        } else if (num_len > (start - 1)) {
-            var tho_place = str_num
-                .slice(-start)
-                .substring(0, 1);
-            if (parseInt(tho_place) != 0) {
-                result = this.numtow[tho_place] + ' ' + word + ' ' + result;
-            }
-        }
-
-        return result;
-    },
-
-    // Old & modern browsers compatiable, but limited to 0-99 crores range
-    convert: function(num) {
-        var result = '';
-        var paisa = '';
-        str_num = num.toString();
-        num_len = str_num.length;
-
-        // Last digit
-        if (parseInt(str_num) == 0) {
-            // If you truly wanna be a zero, go be a zero and eject
-            result = this.numtow[str_num];
-        } else { // Non-zero
-
-            // Just 1 digit
-            if (num_len == 1) {
-                result = this.numtow[str_num[num_len - 1]];
-            }
-
-            if (num_len > 1) {
-                // Last 2 digits
-                var last_two = str_num.slice(-2);
-
-                // What if 2nd last is zero?
-                if (parseInt(last_two[0]) == 0 && parseInt(last_two[1]) != 0) {
-                    result = this.numtow[last_two[1].toString()];
-                } else {
-                    if (parseInt(last_two) != 0)
-                        result = this.numtow[last_two];
-                }
-
-                // Hundredth place
-                var hundred_places = str_num.slice(-3);
-                if (num_len > 2 && hundred_places[0] != 0) {
-                    result = this.numtow[parseInt(hundred_places) - parseInt(str_num.slice(-2))] + ' ' + result;
-                }
-
-                // Thousands, millions and more
-                for (var i = 4; i < 9; i += 2) {
-                    result = this.from_places_to_words(str_num, i, result);
-                }
-            }
-        } // non-zero
-
-        return result.trim();
-    },
-
     /* ES6 version contributed by Swagata Prateek */
     determinant: {
         '': (numLength) => numLength < 3,
@@ -205,41 +128,41 @@ var NumToBangla = {
         'কোটি': (numLength) => numLength >= 8
     },
 
-    convertES6: function (num) {
-        let self = this;
+    convert: function (num) {
+        var self = this;
 
         // local functions
-        const isInteger = function (value) {
+        var isInteger = function (value) {
             return typeof value === 'number' &&
                 isFinite(value) &&
                 Math.floor(value) === value;
         }
 
-        const digits = (number) => Math.log(number) * Math.LOG10E + 1 | 0;
-        const isNegative = (number) => number < 0;
-        const split = (number, count) => {
+        var digits = (number) => Math.log(number) * Math.LOG10E + 1 | 0;
+        var isNegative = (number) => number < 0;
+        var split = (number, count) => {
             // Doing math operations in JS, I must have guts
             // Replace with string operations if need be. Wanted to do some perf test
-            const digitCount = digits(number);
+            var digitCount = digits(number);
             count = Math.min(digitCount, count);
-            const decpower = 10 ** (digitCount - count);
-            let retArr = [Math.floor(number / decpower)]
+            var decpower = 10 ** (digitCount - count);
+            var retArr = [Math.floor(number / decpower)]
 
             if (count !== digitCount) retArr.push(number % decpower);
             return retArr;
         };
 
-        const hasDet = (numLength, determinant) => Object
+        var hasDet = (numLength, determinant) => Object
             .keys(determinant)
             .find(key => determinant[key](numLength));
 
-        const convertInternal = function (number) {
+        var convertInternal = function (number) {
             numLength = digits(number);
-            let det = hasDet(numLength, self.determinant);
+            var det = hasDet(numLength, self.determinant);
 
-            let numSplit = [];
-            let midterm = '';
-            let firstTerm = '';
+            var numSplit = [];
+            var midterm = '';
+            var firstTerm = '';
 
             if (det) {
                 if (det !== 'কোটি') {
@@ -296,46 +219,39 @@ var NumToBangla = {
 }
 
 var test_data = [
-    [0,         'শুন্য'],
-    [8,         'আট'],
-    [49,        'ঊনপঞ্চাশ'],
-    [400,       'চারশো'],
-    [704,       'সাতশো চার'],
-    [939,       'নয়শো ঊনচল্লিশ'],
-    [3204,      'তিন হাজার দুইশো চার'],
-    [20001,     'বিশ হাজার এক'],
-    [20308,     'বিশ হাজার তিনশো আট'],
-    [50000,     'পঞ্চাশ হাজার'],
-    [200007,    'দুই লাখ সাত'],
-    [700000,    'সাত লাখ'],
-    [2000603,   'বিশ লাখ ছয়শো তিন'],
-    [5000000,   'পঞ্চাশ লাখ'],
-    [1923908,   'ঊনিশ লাখ তেইশ হাজার নয়শো আট'],
-    [83641705,  'আট কোটি ছত্রিশ লাখ একচল্লিশ হাজার সাতশো পাঁচ'],
-    [80000000,  'আট কোটি'],
-    [80000002,  'আট কোটি দুই'],
-    [500000000, 'পঞ্চাশ কোটি'],
-    [501619500, 'পঞ্চাশ কোটি ষোল লাখ ঊনিশ হাজার পাঁচশো'],
-    [900000000, 'নব্বই কোটি'],
-    [987654321, 'আটানব্বই কোটি ছিয়াত্তর লাখ চুয়ান্ন হাজার তিনশো একুশ'],
-    [990000000, 'নিরানব্বই কোটি'],
-    [990000001, 'নিরানব্বই কোটি এক'],
-    [999999999, 'নিরানব্বই কোটি নিরানব্বই লাখ নিরানব্বই হাজার নয়শো নিরানব্বই'],
-    [9999999999, 'নয়শো নিরানব্বই কোটি নিরানব্বই লাখ নিরানব্বই হাজার নয়শো নিরানব্বই'],
-    [99999999999, 'নয় হাজার নয়শো নিরানব্বই কোটি নিরানব্বই লাখ নিরানব্বই হাজার নয়শো নিরানব্বই'],
-    [999999999999, 'নিরানব্বই হাজার নয়শো নিরানব্বই কোটি নিরানব্বই লাখ নিরানব্বই হাজার নয়শো নিরানব্বই']
+    [0,             'শুন্য'],
+    [8,             'আট'],
+    [49,            'ঊনপঞ্চাশ'],
+    [400,           'চারশো'],
+    [704,           'সাতশো চার'],
+    [939,           'নয়শো ঊনচল্লিশ'],
+    [3204,          'তিন হাজার দুইশো চার'],
+    [20001,         'বিশ হাজার এক'],
+    [20308,         'বিশ হাজার তিনশো আট'],
+    [50000,         'পঞ্চাশ হাজার'],
+    [200007,        'দুই লাখ সাত'],
+    [700000,        'সাত লাখ'],
+    [2000603,       'বিশ লাখ ছয়শো তিন'],
+    [5000000,       'পঞ্চাশ লাখ'],
+    [1923908,       'ঊনিশ লাখ তেইশ হাজার নয়শো আট'],
+    [83641705,      'আট কোটি ছত্রিশ লাখ একচল্লিশ হাজার সাতশো পাঁচ'],
+    [80000000,      'আট কোটি'],
+    [80000002,      'আট কোটি দুই'],
+    [500000000,     'পঞ্চাশ কোটি'],
+    [501619500,     'পঞ্চাশ কোটি ষোল লাখ ঊনিশ হাজার পাঁচশো'],
+    [900000000,     'নব্বই কোটি'],
+    [987654321,     'আটানব্বই কোটি ছিয়াত্তর লাখ চুয়ান্ন হাজার তিনশো একুশ'],
+    [990000000,     'নিরানব্বই কোটি'],
+    [990000001,     'নিরানব্বই কোটি এক'],
+    [999999999,     'নিরানব্বই কোটি নিরানব্বই লাখ নিরানব্বই হাজার নয়শো নিরানব্বই'],
+    [9999999999,    'নয়শো নিরানব্বই কোটি নিরানব্বই লাখ নিরানব্বই হাজার নয়শো নিরানব্বই'],
+    [99999999999,   'নয় হাজার নয়শো নিরানব্বই কোটি নিরানব্বই লাখ নিরানব্বই হাজার নয়শো নিরানব্বই'],
+    [999999999999,  'নিরানব্বই হাজার নয়শো নিরানব্বই কোটি নিরানব্বই লাখ নিরানব্বই হাজার নয়শো নিরানব্বই']
 ];
-
-QUnit.test("All tests for the original version in 0-99 crore range", function (assert) {
-    for (var i = 0; i < test_data.length - 3; ++i) {
-        assert.equal(NumToBangla.convert(test_data[i][0]), test_data[i][1],
-            test_data[i][0] + ' => ' + test_data[i][1]);
-    }
-});
 
 QUnit.test("All tests for ES6 version", function (assert) {
     for (var i = 0; i < test_data.length; ++i) {
-        assert.equal(NumToBangla.convertES6(test_data[i][0]), test_data[i][1],
+        assert.equal(NumToBangla.convert(test_data[i][0]), test_data[i][1],
             test_data[i][0] + ' => ' + test_data[i][1]);
     }
 });
